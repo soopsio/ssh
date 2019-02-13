@@ -1,13 +1,12 @@
 package ssh
 
 import (
+	gossh "golang.org/x/crypto/ssh"
 	"io"
 	"io/ioutil"
 	"net"
 	"path"
 	"sync"
-
-	gossh "golang.org/x/crypto/ssh"
 )
 
 const (

@@ -44,6 +44,9 @@ type Session interface {
 	// which considers quoting not just whitespace.
 	Command() []string
 
+	// CommandRaw returns a raw command
+	CommandRaw() string
+
 	// PublicKey returns the PublicKey used to authenticate. If a public key was not
 	// used it will return nil.
 	PublicKey() PublicKey
@@ -110,6 +113,7 @@ type session struct {
 	env              []string
 	ptyCb            PtyCallback
 	cmd              []string
+	cmdraw           string
 	ctx              Context
 	sigCh            chan<- Signal
 	sigBuf           []Signal
@@ -191,6 +195,10 @@ func (sess *session) Command() []string {
 	return append([]string(nil), sess.cmd...)
 }
 
+func (sess *session) CommandRaw() string {
+	return sess.cmdraw
+}
+
 func (sess *session) Pty() (Pty, <-chan Window, bool) {
 	if sess.pty != nil {
 		return *sess.pty, sess.winch, true
@@ -224,6 +232,7 @@ func (sess *session) handleRequests(reqs <-chan *gossh.Request) {
 
 			var payload = struct{ Value string }{}
 			gossh.Unmarshal(req.Payload, &payload)
+			sess.cmdraw = payload.Value
 			sess.cmd, _ = shlex.Split(payload.Value, true)
 			sess.payload = []byte(payload.Value)
 			go func() {
