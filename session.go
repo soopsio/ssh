@@ -84,6 +84,9 @@ type Session interface {
 
 	// Return current ssh sessionid
 	SessionID() string
+
+	// Ping
+	Ping() error
 }
 
 // maxSigBufSize is how many signals will be buffered
@@ -131,6 +134,17 @@ type session struct {
 
 func (sess *session) SessionID() string {
 	return sess.sessionId
+}
+
+func (sess *session) Ping() error {
+	if sess.exited {
+		return errors.New("session is exited")
+	}
+	_, err := sess.SendRequest("keepalive@golang.org", false, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (sess *session) Write(p []byte) (n int, err error) {
