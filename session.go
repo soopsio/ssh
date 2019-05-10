@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net"
 	"sync"
 
@@ -77,6 +78,12 @@ type Session interface {
 
 	// Payload returns the payload information sent by the subsystem request
 	Payload() []byte
+
+	// Return ssh connection Context
+	Ctx() Context
+
+	// Return current ssh sessionid
+	SessionID() string
 }
 
 // maxSigBufSize is how many signals will be buffered
@@ -96,6 +103,7 @@ func sessionHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChanne
 		subsystemHandler: srv.SubsystemHandler,
 		ptyCb:            srv.PtyCallback,
 		ctx:              ctx,
+		sessionId:        uuid.New().String(),
 	}
 	sess.handleRequests(reqs)
 }
@@ -118,6 +126,11 @@ type session struct {
 	sigCh            chan<- Signal
 	sigBuf           []Signal
 	payload          []byte
+	sessionId        string
+}
+
+func (sess *session) SessionID() string {
+	return sess.sessionId
 }
 
 func (sess *session) Write(p []byte) (n int, err error) {
@@ -138,6 +151,10 @@ func (sess *session) Write(p []byte) (n int, err error) {
 
 func (sess *session) Payload() []byte {
 	return sess.payload
+}
+
+func (sess *session) Ctx() Context {
+	return sess.ctx
 }
 
 func (sess *session) PublicKey() PublicKey {
