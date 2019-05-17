@@ -83,7 +83,7 @@ type Session interface {
 	Ctx() Context
 
 	// Return current ssh sessionid
-	SessionID() string
+	ChannelID() string
 
 	// Ping
 	Ping() error
@@ -106,7 +106,7 @@ func sessionHandler(srv *Server, conn *gossh.ServerConn, newChan gossh.NewChanne
 		subsystemHandler: srv.SubsystemHandler,
 		ptyCb:            srv.PtyCallback,
 		ctx:              ctx,
-		sessionId:        uuid.New().String(),
+		channelID:        uuid.New().String(),
 	}
 	sess.handleRequests(reqs)
 }
@@ -129,11 +129,11 @@ type session struct {
 	sigCh            chan<- Signal
 	sigBuf           []Signal
 	payload          []byte
-	sessionId        string
+	channelID        string
 }
 
-func (sess *session) SessionID() string {
-	return sess.sessionId
+func (sess *session) ChannelID() string {
+	return sess.channelID
 }
 
 func (sess *session) Ping() error {
