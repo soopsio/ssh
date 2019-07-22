@@ -140,7 +140,7 @@ func (sess *session) Ping() error {
 	if sess.exited {
 		return errors.New("session is exited")
 	}
-	_, err := sess.SendRequest("keepalive@golang.org", false, nil)
+	_, err := sess.SendRequest("keepalive@golang.org", true, nil)
 	if err != nil {
 		return err
 	}
