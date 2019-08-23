@@ -3,7 +3,6 @@ package ssh
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"sync"
 	"time"
@@ -25,6 +24,7 @@ type Server struct {
 	HostSigners      []Signer // private keys for the host key, must have at least one
 	Version          string   // server version to be sent before the initial handshake
 
+	NextAuthMethodsHandler        NextAuthMethodsHandler        // 2fa authentication handler
 	KeyboardInteractiveHandler    KeyboardInteractiveHandler    // keyboard-interactive authentication handler
 	PasswordHandler               PasswordHandler               // password authentication handler
 	PublicKeyHandler              PublicKeyHandler              // public key authentication handler
@@ -91,26 +91,35 @@ func (srv *Server) config(ctx Context) *gossh.ServerConfig {
 	if srv.PasswordHandler != nil {
 		config.PasswordCallback = func(conn gossh.ConnMetadata, password []byte) (*gossh.Permissions, error) {
 			applyConnMetadata(ctx, conn)
-			if ok := srv.PasswordHandler(ctx, string(password)); !ok {
-				return ctx.Permissions().Permissions, fmt.Errorf("permission denied")
+			if err := srv.PasswordHandler(ctx, string(password)); err != nil {
+				return ctx.Permissions().Permissions, err
 			}
+			ctx.SetValue("FirstAuth", true)
 			return ctx.Permissions().Permissions, nil
 		}
 	}
 	if srv.PublicKeyHandler != nil {
 		config.PublicKeyCallback = func(conn gossh.ConnMetadata, key gossh.PublicKey) (*gossh.Permissions, error) {
 			applyConnMetadata(ctx, conn)
-			if ok := srv.PublicKeyHandler(ctx, key); !ok {
-				return ctx.Permissions().Permissions, fmt.Errorf("permission denied")
+			if err := srv.PublicKeyHandler(ctx, key); err != nil {
+				return ctx.Permissions().Permissions, err
 			}
 			ctx.SetValue(ContextKeyPublicKey, key)
+			ctx.SetValue("FirstAuth", true)
 			return ctx.Permissions().Permissions, nil
 		}
 	}
+
+	if srv.NextAuthMethodsHandler != nil {
+		config.NextAuthMethodsCallback = func(conn gossh.ConnMetadata) []string {
+			return srv.NextAuthMethodsHandler(ctx)
+		}
+	}
+
 	if srv.KeyboardInteractiveHandler != nil {
 		config.KeyboardInteractiveCallback = func(conn gossh.ConnMetadata, challenger gossh.KeyboardInteractiveChallenge) (*gossh.Permissions, error) {
-			if ok := srv.KeyboardInteractiveHandler(ctx, challenger); !ok {
-				return ctx.Permissions().Permissions, fmt.Errorf("permission denied")
+			if err := srv.KeyboardInteractiveHandler(ctx, challenger); err != nil {
+				return ctx.Permissions().Permissions, err
 			}
 			return ctx.Permissions().Permissions, nil
 		}

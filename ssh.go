@@ -35,13 +35,16 @@ type Option func(*Server) error
 type Handler func(Session)
 
 // PublicKeyHandler is a callback for performing public key authentication.
-type PublicKeyHandler func(ctx Context, key PublicKey) bool
+type PublicKeyHandler func(ctx Context, key PublicKey) error
 
 // PasswordHandler is a callback for performing password authentication.
-type PasswordHandler func(ctx Context, password string) bool
+type PasswordHandler func(ctx Context, password string) error
+
+// NextAuthHandler is a callback for 2FA
+type NextAuthMethodsHandler func(ctx Context) []string
 
 // KeyboardInteractiveHandler is a callback for performing keyboard-interactive authentication.
-type KeyboardInteractiveHandler func(ctx Context, challenger gossh.KeyboardInteractiveChallenge) bool
+type KeyboardInteractiveHandler func(ctx Context, challenger gossh.KeyboardInteractiveChallenge) error
 
 // PtyCallback is a hook for allowing PTY sessions.
 type PtyCallback func(ctx Context, pty Pty) bool

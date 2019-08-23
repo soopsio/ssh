@@ -14,6 +14,21 @@ func PasswordAuth(fn PasswordHandler) Option {
 	}
 }
 
+func KeyboardInteractiveChallenge(fn KeyboardInteractiveHandler) Option {
+	return func(srv *Server) error {
+		srv.KeyboardInteractiveHandler = fn
+		return nil
+	}
+}
+
+// NextAuthMethods returns a functional option that sets NextAuthMethods on the server.
+func NextAuthMethods(fn NextAuthMethodsHandler) Option {
+	return func(srv *Server) error {
+		srv.NextAuthMethodsHandler = fn
+		return nil
+	}
+}
+
 // PublicKeyAuth returns a functional option that sets PublicKeyHandler on the server.
 func PublicKeyAuth(fn PublicKeyHandler) Option {
 	return func(srv *Server) error {
